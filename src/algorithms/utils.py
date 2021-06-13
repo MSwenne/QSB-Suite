@@ -1,3 +1,5 @@
+import random
+
 def QFT(first: int, last: int) -> str:
     res = "// Begin QFT\n"
     for a in range(first, last+1):
@@ -21,3 +23,23 @@ def QASM_prefix(qubits: int, bits: int) -> str:
     res += f"qreg q[{qubits}];\n"
     res += f"creg c[{bits}];\n\n"
     return res
+
+
+def random_pauli() -> str:
+    return random.choice(["x", "y", "z"])
+
+def random_cliff3() -> str:
+    return random.choice(["x", "h", "s"])
+
+def random_cliff7() -> str:
+    return random.choice(["x", "y", "z", "h", "sx", "sy", "s"])
+
+def random_univeral() -> str:
+    return random.choice(["x", "y", "z", "h", "t"])
+
+def random_cgate(qubits):
+    c = random.randint(0,qubits-1)
+    t = random.randint(0,qubits-1)
+    while c == t:
+        t = random.randint(0,qubits-1)
+    return f"cz q[{c}], q[{t}];\n"

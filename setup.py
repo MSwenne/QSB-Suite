@@ -11,7 +11,7 @@ setuptools.setup(
     description = "A Quantum Simulator Benchmarking suite that consistently generates QASM code for several different quantum algorithms, which can be used to test the capabilities of a simulator.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/", #TODO
+    url="https://github.com/MSwenne/QSB-Suite",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

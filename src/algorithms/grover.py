@@ -5,7 +5,7 @@ from typing import List
 from .utils import QASM_prefix
 
 class Grover():
-    def __init__(self, qubits: int):
+    def __init__(self, qubits: int, barrier: bool = True):
         self.qubits: int = qubits
         self.f: TextIOWrapper = None
 
@@ -32,6 +32,7 @@ class Grover():
         - qubits: the number of qubits that Grover's algorithm uses (without ancillas)
         '''
         self.f.write(f"\n// Begin mean inversion\n")
+        self.f.write(f"barrier;\n")
         for i in range(self.qubits):
             self.f.write(f"h q[{i}];\n")
         for i in range(self.qubits):
@@ -41,6 +42,7 @@ class Grover():
             self.f.write(f"x q[{i}];\n")
         for i in range(self.qubits):
             self.f.write(f"h q[{i}];\n")
+        self.f.write(f"barrier;\n")
 
     def __write_oracle(self, oracle: List[int]) -> None:
         ''' 
@@ -50,11 +52,13 @@ class Grover():
         - oracle: the oracle we need to find with Grover's algorithm
         '''
         self.f.write(f"// Begin oracle\n")
+        self.f.write(f"barrier;\n")
         for i, bit in enumerate(oracle):
             if not bit: self.f.write(f"x q[{i}];\n")
         self.f.write("c"*self.qubits+"x "+"q["+"], q[".join([str(x) for x in range(self.qubits+1)])+"];\n")
         for i, bit in enumerate(oracle):
             if not bit: self.f.write(f"x q[{i}];\n")
+        self.f.write(f"barrier;\n")
 
     def __write_oracle_kSAT(self, kSAT: int, oracle: List[int]) -> None:
         ''' 
@@ -67,6 +71,7 @@ class Grover():
         clauses = int(len(oracle) / kSAT)
         targets = [str(abs(x)-1) for x in oracle]
         self.f.write(f"// Begin oracle\n")
+        self.f.write(f"barrier;\n")
         for clause in range(clauses):
             for i in oracle[clause*kSAT:(clause+1)*kSAT]:
                 if i < 0: self.f.write(f"x q[{abs(i+1)}];\n")
@@ -84,6 +89,7 @@ class Grover():
             self.f.write(f"{'c'*kSAT}x q[{'], q['.join(targets[clause*kSAT:(clause+1)*kSAT])}], q[{self.qubits+1+clause}];\n")
             for i in oracle[clause*kSAT:(clause+1)*kSAT]:
                 if i < 0: self.f.write(f"x q[{abs(i+1)}];\n")
+        self.f.write(f"barrier;\n")
 
     def __write_init(self) -> None:
         ''' 
@@ -95,6 +101,7 @@ class Grover():
         self.f.write(f"x q[{self.qubits}];\n")
         for i in range(self.qubits+1):
             self.f.write(f"h q[{i}];\n")
+        self.f.write(f"barrier;\n")
 
     def __get_iterations(self, n_answers: int) -> int:
         return floor(pi/4*sqrt(2**self.qubits/n_answers))

@@ -5,12 +5,13 @@ import random
 from .utils import QASM_prefix
 
 class VQC():
-    def __init__(self, qubits: int, parametrized_layers: int, entanglement_layers: int = 2, gates: List[str] = ['ry', 'rz']):
+    def __init__(self, qubits: int, parametrized_layers: int, entanglement_layers: int = 2, gates: List[str] = ['ry', 'rz'], barrier: bool = True):
         self.qubits: int = qubits
         self.entanglement_layers: int = entanglement_layers
         self.parametrized_layers: int = parametrized_layers
         self.gates: List[str] = gates
         self.circuit: List[str] = []
+        self.barrier = barrier
         self.create_circuit()
         self.f: TextIOWrapper = None
 
@@ -24,18 +25,26 @@ class VQC():
             for i in range(self.qubits-1):
                 for j in range(i+1,self.qubits):
                     self.circuit.append("crz({})"+f" q[{i}], q[{j}];\n")
+        if (self.barrier):
+            self.circuit.append(f"barrier;\n")
         # Parametrized gates
         for gate in self.gates:
             for i in range(self.qubits):
                 self.circuit.append(f"{gate}"+"({})"+f" q[{i}];\n")
+        if (self.barrier):
+            self.circuit.append(f"barrier;\n")
         for _ in range(self.parametrized_layers):
             for i in range(self.qubits-1):
                 self.circuit.append(f"cz q[{i}], q[{i+1}];\n")
             if (self.qubits != 2):
                 self.circuit.append(f"cz q[{0}], q[{self.qubits-1}];\n")
+            if (self.barrier):
+                self.circuit.append(f"barrier;\n")
             for gate in self.gates:
                 for i in range(self.qubits):
                     self.circuit.append(f"{gate}"+"({})"+f" q[{i}];\n")
+            if (self.barrier):
+                self.circuit.append(f"barrier;\n")
         for i in range(self.qubits):
             self.circuit.append(f"measure q[{i}]->c[{i}];\n")
 

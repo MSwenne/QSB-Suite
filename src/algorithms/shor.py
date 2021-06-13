@@ -5,6 +5,10 @@ from typing import List
 from .utils import QFT, QFT_inv, QASM_prefix
 
 class Shor():
+    '''
+        The flollowing functions are a breakdown of the components needed for Shor
+        as in Beauregard, "Circuit for Shor's algorithm using 2n+ 3 qubits." (2002).
+    '''
     def __init__(self, a: int,N: int):
         self.a = a
         self.N = N
@@ -193,7 +197,7 @@ class Shor():
         a_inv = self.__inverse_mod()
         self.__cmult_inv(a_inv, N)
 
-    def generate_2n_3(self, filename: str = "shor.txt") -> None:
+    def generate(self, filename: str = "shor.txt") -> None:
         # set variables
         qubits = 2*self.shor_n+3
         ua = [0]*(2*self.shor_n)
@@ -205,7 +209,7 @@ class Shor():
             ua[i] = new_a
 
         self.f = open(filename, "w")
-        self.f.write(QASM_prefix(qubits, qubits))
+        self.f.write(QASM_prefix(qubits, 2*self.shor_n))
 
         self.f.write(f"x q[{self.shor_n}]\n")
         for i in range(2*self.shor_n):
@@ -213,13 +217,11 @@ class Shor():
             self.__shor_ua(ua[i], self.N)
             k = 2
             for j in range(i-1,-1,-1):
-                # if (outcomes[j] == 1):
-                self.f.write(f"rz({1/(2**k)}) q[{self.top}];\n")
+                self.f.write(f"if(c[{j}]) rz({-1/(2**k)}) q[{self.top}];\n")
                 k += 1
             self.f.write(f"h q[{0}]\n")
+            self.f.write(f"measure q[0]->c[{i}];\n")
+            self.f.write(f"if(c[{i}]) x q[0];\n")
         self.f.close()
-        return True
-
-    def generate(self, filename: str = "shor.txt") -> None:
         return True
 

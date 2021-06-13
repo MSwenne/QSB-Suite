@@ -5,8 +5,9 @@ import random
 from .utils import QASM_prefix
 
 class Supremacy():
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed: int = 42, barrier: bool = True):
         random.seed(seed)
+        self.barrier = barrier
         self.f: TextIOWrapper = None
 
     def set_seed(self, seed: int) -> None:
@@ -33,21 +34,31 @@ class Supremacy():
         self.f.write(QASM_prefix(self.qubits, self.qubits))
         for i in range(self.qubits):
             self.f.write(f"h q[{i}];\n")
+        if (self.barrier):
+            self.f.write(f"barrier;\n")
         if (depth > 0):
             self.f.write(f"// Depth 1\n")
             self.__write_CZs(ctrls=[0,3], tgts=[1,4])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         if (depth > 1):
             self.f.write(f"// Depth 2\n")
             self.__write_CZs(ctrls=[1], tgts=[2])
             self.__write_Ts(tgts=[1,3,4])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         if (depth > 2):
             self.f.write(f"// Depth 3\n")
             self.__write_CZs(ctrls=[2], tgts=[3])
             self.__write_Ts(tgts=[1])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         if (depth > 3):
             self.f.write(f"// Depth 4\n")
             self.__write_CZs(ctrls=[0,3], tgts=[1,4])
             self.__write_Ts(tgts=[2])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         # Following cycles the single qubit gates are random from:sqrt(X), sqrt(Y)}
         for i in range(4,depth):
             self.f.write(f"// Depth {i+1}\n")
@@ -60,6 +71,8 @@ class Supremacy():
             elif (i % 3 == 2):
                 self.__write_CZs(ctrls=[2], tgts=[3])
                 self.__write_random_sqrtXYs(tgts=[0,1,4])
+            if (self.barrier):
+                    self.f.write(f"barrier;\n")
         self.f.close()
 
     def generate_5_4(self, depth: int, filename: str = "supremacy.txt") -> None:
@@ -69,10 +82,13 @@ class Supremacy():
         # Start with |00...0> state
         self.qubits = 20
         self.f = open(filename, "w")
+        self.f.write(QASM_prefix(self.qubits, self.qubits))
 
         # H on all qubits
         for i in range(self.qubits):
             self.f.write(f"h q[{i}];\n")
+        if (self.barrier):
+            self.f.write(f"barrier;\n")
 
         # First 7 cycles the single qubit gates we apply are all T gates
         # (not sure if we also should do random:sqrt(X), sqrt(Y)} on the
@@ -80,29 +96,43 @@ class Supremacy():
         if (depth > 0):
             self.f.write(f"// Depth 1\n")
             self.__write_CZs(ctrls=[2,5,12,15], tgts=[3,6,13,16])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         if (depth > 1):
             self.f.write(f"// Depth 2\n")
             self.__write_CZs(ctrls=[0,7,10,17], tgts=[1,8,11,18])
             self.__write_Ts(tgts=[2,3,5,6,12,13,15,16])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         if (depth > 2):
             self.f.write(f"// Depth 3\n")
             self.__write_CZs(ctrls=[6,8], tgts=[11,13])
             self.__write_Ts(tgts=[0,1,7,8,10,11,17,18])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         if (depth > 3):
             self.f.write(f"// Depth 4\n")
             self.__write_CZs(ctrls=[5,7,9], tgts=[10,12,14])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         if (depth > 4):
             self.f.write(f"// Depth 5\n")
             self.__write_CZs(ctrls=[3,6,13,16], tgts=[4,7,14,17])
             self.__write_Ts(tgts=[9,14])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         if (depth > 5):
             self.f.write(f"// Depth 6\n")
             self.__write_CZs(ctrls=[1,8,11,18], tgts=[2,9,12,19])
             self.__write_Ts(tgts=[4])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         if (depth > 6):
             self.f.write(f"// Depth 7\n")
             self.__write_CZs(ctrls=[0,2,4,11,13], tgts=[5,7,9,16,18])
             self.__write_Ts(tgts=[9])
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
         # Following cycles the single qubit gates are random from:sqrt(X), sqrt(Y)}
         for i in range(7,depth):
             self.f.write(f"// Depth {i+1}\n")
@@ -130,4 +160,6 @@ class Supremacy():
             elif (i % 8 == 7):
                 self.__write_CZs(ctrls=[1,3,10,12,14], tgts=[1,8,15,17,19])
                 self.__write_random_sqrtXYs([0,2,4,5,7,9,11,13,16,18])
-            self.f.close()
+            if (self.barrier):
+                self.f.write(f"barrier;\n")
+        self.f.close()
