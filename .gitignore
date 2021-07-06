@@ -1,8 +1,5 @@
 circuits/
-data/
 plot/
-experiments.py
-plot_experiments.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -118,4 +115,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-src/plot_algorithms.py
