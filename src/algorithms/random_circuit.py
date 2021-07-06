@@ -12,10 +12,10 @@ class Random_circuit():
     def set_seed(self, seed: int) -> None:
         random.seed(seed)
 
-    def generate(self, n_gates: int, cgate_ratio: int, gate_set: str = "u", filename: str = "random.txt"):
+    def generate(self, n_gates: int, cgate_ratio: int, gate_set: str = "u", filename: str = "random"):
         if (not (gate_set in ["p", "c3", "c7", "u"])):
             print(f"Random circuit: gate set unknown: {gate_set}")
-        self.f = open(filename, "w")
+        self.f = open("circuits/"+filename+".qasm", "w")
         self.f.write(QASM_prefix(self.qubits, self.qubits))
         for _ in range(n_gates):
             if(random.random() < cgate_ratio):

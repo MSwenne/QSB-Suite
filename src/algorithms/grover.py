@@ -74,10 +74,10 @@ class Grover():
         self.f.write(f"barrier;\n")
         for clause in range(clauses):
             for i in oracle[clause*kSAT:(clause+1)*kSAT]:
-                if i < 0: self.f.write(f"x q[{abs(i+1)}];\n")
+                if i > 0: self.f.write(f"x q[{abs(i+1)}];\n")
             self.f.write(f"{'c'*kSAT}x q[{'], q['.join(targets[clause*kSAT:(clause+1)*kSAT])}], q[{self.qubits+1+clause}];\n")
             for i in oracle[clause*kSAT:(clause+1)*kSAT]:
-                if i < 0: self.f.write(f"x q[{abs(i+1)}];\n")
+                if i > 0: self.f.write(f"x q[{abs(i+1)}];\n")
         for i in range(self.qubits,self.qubits+clauses):
             self.f.write(f"x q[{abs(i+1)}];\n")
         self.f.write("c"*clauses+"x "+"q["+"], q[".join([str(x) for x in range(self.qubits+1,self.qubits+1+clauses)])+f"], q[{self.qubits}];\n")
@@ -85,10 +85,10 @@ class Grover():
             self.f.write(f"x q[{abs(i+1)}];\n")
         for clause in range(clauses-1,-1,-1):
             for i in oracle[clause*kSAT:(clause+1)*kSAT]:
-                if i < 0: self.f.write(f"x q[{abs(i+1)}];\n")
+                if i > 0: self.f.write(f"x q[{abs(i+1)}];\n")
             self.f.write(f"{'c'*kSAT}x q[{'], q['.join(targets[clause*kSAT:(clause+1)*kSAT])}], q[{self.qubits+1+clause}];\n")
             for i in oracle[clause*kSAT:(clause+1)*kSAT]:
-                if i < 0: self.f.write(f"x q[{abs(i+1)}];\n")
+                if i > 0: self.f.write(f"x q[{abs(i+1)}];\n")
         self.f.write(f"barrier;\n")
 
     def __write_init(self) -> None:
@@ -101,7 +101,6 @@ class Grover():
         self.f.write(f"x q[{self.qubits}];\n")
         for i in range(self.qubits+1):
             self.f.write(f"h q[{i}];\n")
-        self.f.write(f"barrier;\n")
 
     def __get_iterations(self, n_answers: int) -> int:
         return floor(pi/4*sqrt(2**self.qubits/n_answers))
@@ -110,7 +109,7 @@ class Grover():
         oracle = [oracle >> i & 1 for i in range(self.qubits-1,-1,-1)]
         return oracle[::-1]
 
-    def generate(self, oracle: int, filename: str = "grover.txt") -> bool:
+    def generate(self, oracle: int, filename: str = "grover") -> bool:
         ''' 
         Creates a file <filename> and writes QASM code representing Grover's algorithm
         working on <qubits> qubits (without ancillas) and having <oracle> as oracle
@@ -120,21 +119,24 @@ class Grover():
         '''
         # Check if the oracle is valid
         iterations = self.__get_iterations(n_answers=1)
-        oracle = self.__get_bin_oracle(oracle)
+        oracle_bin = self.__get_bin_oracle(oracle)
 
-        self.f = open(filename, "w")
+        self.f = open("circuits/"+filename+".qasm", "w")
         self.f.write(QASM_prefix(qubits=self.qubits+1, bits=self.qubits))
+        oracle_bin.reverse()
+        self.f.write(f"// Correct answer: {oracle}(LSB) = {oracle_bin} \n")
+        oracle_bin.reverse()
 
         self.__write_init()
         for iter in range(iterations):
             self.f.write(f"\n// Iteration {iter+1}\n")
-            self.__write_oracle(oracle)
+            self.__write_oracle(oracle_bin)
             self.__write_mean_inversion()
         self.__write_measure()
         self.f.close()
         return True
 
-    def generate_kSAT(self, oracle: List[int], kSAT: int, n_answers: int, filename: str= "grover_kSAT.txt") -> bool:
+    def generate_kSAT(self, oracle: List[int], kSAT: int, n_answers: int, filename: str= "grover_kSAT") -> bool:
         ''' 
         Creates a file <filename> and writes QASM code representing Grover's algorithm working on <qubits> \\
         qubits (without ancillas) and having <oracle> as oracle
@@ -147,7 +149,7 @@ class Grover():
         iterations = self.__get_iterations(n_answers=n_answers)
         clauses = int(len(oracle) / kSAT)
 
-        self.f = open(filename, "w")
+        self.f = open("circuits/"+filename+".qasm", "w")
         self.f.write(QASM_prefix(qubits=self.qubits+1+clauses, bits=self.qubits))
 
         self.__write_init()

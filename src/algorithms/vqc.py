@@ -48,7 +48,7 @@ class VQC():
         for i in range(self.qubits):
             self.circuit.append(f"measure q[{i}]->c[{i}];\n")
 
-    def generate(self, datapoint: List[float], theta: List[float], filename: str = "vqc.txt") -> None:
+    def generate(self, datapoint: List[float], theta: List[float], filename: str = "vqc") -> None:
         # Create entangled rotations for every qubit pair
         entangled_rot = []
         for i in range(self.qubits-1):
@@ -61,7 +61,7 @@ class VQC():
             params.extend(entangled_rot)
         params.extend(theta)
         # Fill in all values and write to file
-        self.f = open(filename, "w")
+        self.f = open("circuits/"+filename+".qasm", "w")
         self.f.write(QASM_prefix(self.qubits, self.qubits))
         j = 0
         for line in self.circuit:
@@ -73,9 +73,9 @@ class VQC():
         self.f.close()
         return True
 
-    def generate_random(self, seed: int = 42, filename: str = "vqc.txt") -> None:
+    def generate_random(self, seed: int = 42, filename: str = "vqc") -> None:
         random.seed(seed)
-        self.f = open(filename, "w")
+        self.f = open("circuits/"+filename+".qasm", "w")
         self.f.write(QASM_prefix(self.qubits, self.qubits))
         j = 0
         for line in self.circuit:

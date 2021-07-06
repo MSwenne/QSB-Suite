@@ -55,6 +55,20 @@ class Shor():
             p2 = p2 << 1
         return True
 
+    def __shor_set_globals(self, a: int, N: int):
+        shor_n = ceil(log2(N))
+        p2 = 1
+        for i in range(shor_n):
+            self.shor_bits_a[i] = a and p2
+            self.shor_bits_N[i] = N and p2
+            p2 = p2 << 1
+        self.top = 0
+        self.ctrl_first = 1
+        self.ctrl_last = shor_n
+        self.helper = shor_n + 1
+        self.targ_first = shor_n + 2
+        self.targ_last = 2*shor_n + 2
+
     def __write_phi(self, c1: int, c2: int, qubit: int, rotation: float):
         if (c1 == -1):
             if (c2 == -1):
@@ -68,6 +82,7 @@ class Shor():
                 self.f.write(f"ccrz({rotation}) q[{c1}], q[{c2}], q[{qubit}];\n")
 
     def __phi_add(self, first: int, last: int, c1: int, c2: int, a: List[bool], inverse: bool):
+        self.f.write("// phi add\n")
         num_qubits = (last - first) + 1
         parity =  -inverse*2+1
         for i in range (num_qubits):
@@ -78,6 +93,8 @@ class Shor():
                     self.__write_phi(c1, c2, qubit, parity*1/(2**k))
 
     def __phi_add_mod(self, c1: int, c2: int, a: int, N: int):
+        self.__shor_set_globals(a,N)
+        self.f.write("// phi add mod\n")
         # 1.  controlled(c1,c2) phi_add(a)
         self.__phi_add(self.targ_first, self.targ_last, c1, c2, self.shor_bits_a, inverse=False)
         # 2.  phi_add_inv(N)
@@ -106,6 +123,7 @@ class Shor():
         self.__phi_add(self.targ_first, self.targ_last, c1, c2, self.shor_bits_a, inverse=False)
 
     def __phi_add_mod_inv(self, c1: int, c2: int, a: int, N: int):
+        self.__shor_set_globals(a,N)
         # 13. controlled(c1,c2) phi_add_inv(a)
         self.__phi_add(self.targ_first, self.targ_last, c1, c2, self.shor_bits_a, inverse=True)
         # 12. QFT^-1
@@ -134,13 +152,12 @@ class Shor():
         self.__phi_add(self.targ_first, self.targ_last, c1, c2, self.shor_bits_a, inverse=True)
 
     def __cmult(self, a: int, N: int):
+        self.f.write("// cmult\n")
         # this implements the _controlled_ cmult operation
         # 1. QFT on bottom register
         self.f.write(QFT(self.targ_first, self.targ_last))
-
         # 2. loop over k = {0, n-1}
         t = a
-        # //BDDVAR cs[] = {self.top, QDD_INVALID_VAR, QDD_INVALID_VAR};
         for c2 in range(self.ctrl_last, self.ctrl_first-1,-1):
             # 2a. double controlled phi_add_mod(a* 2^k)
             self.__phi_add_mod(self.top, c2, t, N)
@@ -187,7 +204,7 @@ class Shor():
         # 1. controlled Cmult(a)
         self.__cmult(a, N)
         # 2. controlled swap top/bottom registers
-        for c2 in range(self.ctrl_first, self.ctrl_last):
+        for c2 in range(self.ctrl_first, self.ctrl_last+1):
             t = self.targ_first+c2
             self.f.write(f"cx q[{t}], q[{c2}];\n")
             self.f.write(f"ccx q[{self.top}], q[{c2}], q[{t}];\n")
@@ -197,7 +214,7 @@ class Shor():
         a_inv = self.__inverse_mod()
         self.__cmult_inv(a_inv, N)
 
-    def generate(self, filename: str = "shor.txt") -> None:
+    def generate(self, filename: str = "shor") -> None:
         # set variables
         qubits = 2*self.shor_n+3
         ua = [0]*(2*self.shor_n)
@@ -208,20 +225,20 @@ class Shor():
             new_a = new_a % self.N
             ua[i] = new_a
 
-        self.f = open(filename, "w")
+        self.f = open("circuits/"+filename+".qasm", "w")
         self.f.write(QASM_prefix(qubits, 2*self.shor_n))
 
         self.f.write(f"x q[{self.shor_n}]\n")
         for i in range(2*self.shor_n):
-            self.f.write(f"h q[{0}]\n")
+            self.f.write(f"h q[{self.top}]\n")
             self.__shor_ua(ua[i], self.N)
             k = 2
             for j in range(i-1,-1,-1):
                 self.f.write(f"if(c[{j}]) rz({-1/(2**k)}) q[{self.top}];\n")
                 k += 1
-            self.f.write(f"h q[{0}]\n")
-            self.f.write(f"measure q[0]->c[{i}];\n")
-            self.f.write(f"if(c[{i}]) x q[0];\n")
+            self.f.write(f"h q[{self.top}]\n")
+            self.f.write(f"measure q[{self.top}]->c[{i}];\n")
+            self.f.write(f"if(c[{i}]) x q[{self.top}];\n")
         self.f.close()
         return True
 
